@@ -1,7 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
 [project]
 name = "medrag"
 version = "0.1.0"
-description = "Add your description here"
+description = "Production-grade Medical Retrieval-Augmented Generation System"
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
-dependencies = []
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Swapnil" }
+]
+
+dependencies = [
+    "fastapi>=0.116",<1.0
+    "uvicorn[standard]>=0.35",
+
+    "pydantic>=2.11",
+    "pydantic-settings>=2.10",
+
+    "python-dotenv>=1.1",
+
+    "dependency-injector>=4.48",
+
+    "structlog>=25.4",
+
+    "langchain>=0.3",
+
+    "qdrant-client>=1.15",
+
+    "rank-bm25>=0.2",
+
+    "sentence-transformers>=5.1",
+]
