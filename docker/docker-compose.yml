@@ -1,0 +1,24 @@
+services:
+  medrag:
+    container_name: medrag-api
+
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+
+    image: medrag:latest
+
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ../logs:/app/logs
+
+    networks:
+      - medrag-network
+
+networks:
+  medrag-network:
+    driver: bridge

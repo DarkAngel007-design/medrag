@@ -1,0 +1,74 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Lint, Test and Build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------------------------------------
+      # Checkout
+      # ----------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------
+      # Install uv
+      # ----------------------------------------------------------
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      # ----------------------------------------------------------
+      # Setup Python
+      # ----------------------------------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ----------------------------------------------------------
+      # Install dependencies
+      # ----------------------------------------------------------
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      # ----------------------------------------------------------
+      # Black
+      # ----------------------------------------------------------
+      - name: Check formatting
+        run: uv run black --check .
+
+      # ----------------------------------------------------------
+      # Ruff
+      # ----------------------------------------------------------
+      - name: Run Ruff
+        run: uv run ruff check .
+
+      # ----------------------------------------------------------
+      # MyPy
+      # ----------------------------------------------------------
+      - name: Run MyPy
+        run: uv run mypy src
+
+      # ----------------------------------------------------------
+      # Pytest
+      # ----------------------------------------------------------
+      - name: Run Pytest
+        run: uv run pytest
+
+      # ----------------------------------------------------------
+      # Docker Build
+      # ----------------------------------------------------------
+      - name: Build Docker image
+        run: docker build -f docker/Dockerfile -t medrag:ci .
