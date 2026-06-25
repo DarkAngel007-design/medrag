@@ -1,6 +1,9 @@
 from dependency_injector import containers, providers
 from qdrant_client import AsyncQdrantClient
 
+from medrag.application.services.generation_service import (
+    GenerationService,
+)
 from medrag.application.services.ingestion_service import (
     IngestionService,
 )
@@ -15,6 +18,9 @@ from medrag.infrastructure.embeddings.bge_m3_provider import (
 )
 from medrag.infrastructure.parsers.pymupdf_parser import (
     PyMuPDFDocumentParser,
+)
+from medrag.infrastructure.prompts.default_prompt_builder import (
+    DefaultPromptBuilder,
 )
 from medrag.infrastructure.repositories.in_memory_document_repository import (
     InMemoryDocumentRepository,
@@ -80,4 +86,15 @@ class Container(containers.DeclarativeContainer):
     retrieval_service = providers.Factory(
         RetrievalService,
         search_repository=search_repository,
+    )
+
+    prompt_builder = providers.Singleton(
+        DefaultPromptBuilder,
+        template_name=app_settings.prompts.system_template,
+    )
+
+    generation_service = providers.Factory(
+        GenerationService,
+        llm_provider=providers.Dependency(),
+        prompt_builder=prompt_builder,
     )
