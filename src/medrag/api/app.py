@@ -8,6 +8,7 @@ from medrag.api.routers import (
     health_router,
     search_router,
 )
+from medrag.api.routers.generation import router as generation_router
 from medrag.shared.config.settings import settings
 from medrag.shared.di import Container
 from medrag.shared.logging import configure_logging, get_logger
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(documents_router)
     app.include_router(search_router)
+    app.include_router(generation_router)
 
     app.state.container = container
 

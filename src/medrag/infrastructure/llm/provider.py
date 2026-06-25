@@ -1,10 +1,7 @@
-"""LiteLLM implementation of the LLM provider interface."""
-
 from __future__ import annotations
 
-from typing import Any
-
 import litellm
+from litellm.exceptions import APIError
 
 from medrag.application.dto.generation import (
     GenerationConfig,
@@ -16,11 +13,11 @@ from medrag.shared.config.llm import LLMSettings
 
 
 class LLMGenerationError(RuntimeError):
-    """Raised when the LLM fails to generate a response."""
+    """Raised when the configured LLM fails to generate a response."""
 
 
 class LiteLLMProvider(LLMProvider):
-    """Concrete LLMProvider implementation backed by LiteLLM."""
+    """LiteLLM implementation of the LLMProvider interface."""
 
     def __init__(
         self,
@@ -28,33 +25,38 @@ class LiteLLMProvider(LLMProvider):
     ) -> None:
         self._settings = settings
 
-    def _completion_kwargs(
+    def _resolve_model(
         self,
         config: GenerationConfig,
-    ) -> dict[str, Any]:
-        """Build keyword arguments for LiteLLM completion."""
+    ) -> str:
+        return config.model or self._settings.model_name
 
-        return {
-            "model": config.model or self._settings.model_name,
-            "temperature": config.temperature,
-            "max_tokens": (
-                config.max_tokens
-                if config.max_tokens is not None
-                else self._settings.max_tokens
-            ),
-            "top_p": config.top_p,
-            "timeout": self._settings.timeout,
-        }
+    def _resolve_temperature(
+        self,
+        config: GenerationConfig,
+    ) -> float:
+        return config.temperature
+
+    def _resolve_max_tokens(
+        self,
+        config: GenerationConfig,
+    ) -> int:
+        return (
+            config.max_tokens
+            if config.max_tokens is not None
+            else self._settings.max_tokens
+        )
 
     async def generate(
         self,
         prompt: str,
         config: GenerationConfig,
     ) -> GenerationResponse:
-        """Generate a response from the supplied prompt."""
+        """Generate a response using LiteLLM."""
 
         try:
             response = await litellm.acompletion(
+                model=self._resolve_model(config),
                 api_key=(
                     self._settings.api_key.get_secret_value()
                     if self._settings.api_key
@@ -66,10 +68,13 @@ class LiteLLMProvider(LLMProvider):
                         "content": prompt,
                     }
                 ],
-                **self._completion_kwargs(config),
+                temperature=self._resolve_temperature(config),
+                max_tokens=self._resolve_max_tokens(config),
+                top_p=config.top_p,
+                timeout=self._settings.timeout,
             )
 
-        except Exception as exc:
+        except APIError as exc:
             raise LLMGenerationError("Failed to generate LLM response.") from exc
 
         usage = None

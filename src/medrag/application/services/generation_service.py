@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from medrag.application.dto.generation import (
+    Citation,
     GenerationRequest,
     GenerationResponse,
 )
@@ -41,4 +42,20 @@ class GenerationService:
             config=request.config,
         )
 
-        return response
+        citations: list[Citation] = [
+            Citation(
+                source_index=source_index,
+                document_id=context.document_id,
+                chunk_id=context.chunk_id,
+            )
+            for source_index, context in enumerate(
+                request.contexts,
+                start=1,
+            )
+        ]
+
+        return response.model_copy(
+            update={
+                "citations": citations,
+            }
+        )

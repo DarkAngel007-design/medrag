@@ -46,6 +46,7 @@ dependencies = [
     "langchain-text-splitters>=0.3.11",
     "pymupdf>=1.27.2.3",
     "python-multipart>=0.0.32",
+    "litellm>=1.89.4",
 ]
 
 [dependency-groups]

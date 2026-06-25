@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .api import APISettings
 from .database import DatabaseSettings
@@ -9,12 +9,19 @@ from .retrieval import RetrievalSettings
 from .vector_db import VectorDBSettings
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     """
     Root application settings.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        case_sensitive=False,
+        extra="ignore",
+        frozen=True,
+    )
 
     api: APISettings = APISettings()
     database: DatabaseSettings = DatabaseSettings()

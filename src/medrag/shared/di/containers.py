@@ -7,6 +7,9 @@ from medrag.application.services.generation_service import (
 from medrag.application.services.ingestion_service import (
     IngestionService,
 )
+from medrag.application.services.rag_service import (
+    RAGService,
+)
 from medrag.application.services.retrieval_service import (
     RetrievalService,
 )
@@ -16,6 +19,7 @@ from medrag.infrastructure.chunkers.recursive_text_chunker import (
 from medrag.infrastructure.embeddings.bge_m3_provider import (
     BGEM3EmbeddingProvider,
 )
+from medrag.infrastructure.llm.provider import LiteLLMProvider
 from medrag.infrastructure.parsers.pymupdf_parser import (
     PyMuPDFDocumentParser,
 )
@@ -93,8 +97,22 @@ class Container(containers.DeclarativeContainer):
         template_name=app_settings.prompts.system_template,
     )
 
+    print("Model:", app_settings.llm.model_name)
+    print("API key loaded:", app_settings.llm.api_key is not None)
+
+    llm_provider = providers.Singleton(
+        LiteLLMProvider,
+        settings=providers.Object(app_settings.llm),
+    )
+
     generation_service = providers.Factory(
         GenerationService,
-        llm_provider=providers.Dependency(),
+        llm_provider=llm_provider,
         prompt_builder=prompt_builder,
+    )
+
+    rag_service = providers.Factory(
+        RAGService,
+        retrieval_service=retrieval_service,
+        generation_service=generation_service,
     )
