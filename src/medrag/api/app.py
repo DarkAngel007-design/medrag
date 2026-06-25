@@ -3,7 +3,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from medrag.api.routers import health_router
+from medrag.api.routers import (
+    documents_router,
+    health_router,
+    search_router,
+)
 from medrag.shared.config.settings import settings
 from medrag.shared.di import Container
 from medrag.shared.logging import configure_logging, get_logger
@@ -18,6 +22,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger = get_logger(__name__)
 
     logger.info("Starting MedRAG...")
+
+    container = app.state.container
+
+    logger.info("Initializing Qdrant collection...")
+
+    search_repository = container.search_repository()
+
+    print(container.settings().vector_db.host)
+    print(container.settings().vector_db.port)
+
+    await search_repository.initialize()
+
+    logger.info("Qdrant initialization complete.")
 
     yield
 
@@ -38,6 +55,12 @@ def create_app() -> FastAPI:
 
     container = Container()
 
+    container.wire(
+        packages=[
+            "medrag.api",
+        ]
+    )
+
     app = FastAPI(
         title=settings.api.app_name,
         version=settings.api.version,
@@ -49,6 +72,8 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health_router)
+    app.include_router(documents_router)
+    app.include_router(search_router)
 
     app.state.container = container
 

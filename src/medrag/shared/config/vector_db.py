@@ -12,7 +12,7 @@ class VectorDBSettings(BaseConfig):
 
     port: int = Field(default=6333)
 
-    collection_name: str = Field(default="medical_documents")
+    collection_name: str = Field(default="medrag_chunks")
 
     grpc_port: int = Field(default=6334)
 

@@ -1,12 +1,34 @@
 from dependency_injector import containers, providers
+from qdrant_client import AsyncQdrantClient
 
-from medrag.shared.config.settings import settings
+from medrag.application.services.ingestion_service import (
+    IngestionService,
+)
+from medrag.application.services.retrieval_service import (
+    RetrievalService,
+)
+from medrag.infrastructure.chunkers.recursive_text_chunker import (
+    RecursiveTextChunker,
+)
+from medrag.infrastructure.embeddings.bge_m3_provider import (
+    BGEM3EmbeddingProvider,
+)
+from medrag.infrastructure.parsers.pymupdf_parser import (
+    PyMuPDFDocumentParser,
+)
+from medrag.infrastructure.repositories.in_memory_document_repository import (
+    InMemoryDocumentRepository,
+)
+from medrag.infrastructure.repositories.qdrant_search_repository import (
+    QdrantSearchRepository,
+)
+from medrag.shared.config.settings import (
+    settings as app_settings,
+)
 
 
 class Container(containers.DeclarativeContainer):
-    """
-    Dependency Injection container.
-    """
+    """Dependency Injection container."""
 
     wiring_config = containers.WiringConfiguration(
         packages=[
@@ -14,4 +36,48 @@ class Container(containers.DeclarativeContainer):
         ]
     )
 
-    settings = providers.Object(settings)
+    settings = providers.Object(app_settings)
+
+    qdrant_client = providers.Singleton(
+        AsyncQdrantClient,
+        url="http://localhost:6333",
+        check_compatibility=False,
+    )
+
+    embedding_provider = providers.Singleton(
+        BGEM3EmbeddingProvider,
+    )
+
+    document_parser = providers.Singleton(
+        PyMuPDFDocumentParser,
+    )
+
+    text_chunker = providers.Singleton(
+        RecursiveTextChunker,
+    )
+
+    document_repository = providers.Singleton(
+        InMemoryDocumentRepository,
+    )
+
+    search_repository = providers.Singleton(
+        QdrantSearchRepository,
+        client=qdrant_client,
+        embedding_provider=embedding_provider,
+        collection_name=app_settings.vector_db.collection_name,
+    )
+
+    indexing_service = search_repository
+
+    ingestion_service = providers.Factory(
+        IngestionService,
+        document_repository=document_repository,
+        document_parser=document_parser,
+        text_chunker=text_chunker,
+        indexing_service=indexing_service,
+    )
+
+    retrieval_service = providers.Factory(
+        RetrievalService,
+        search_repository=search_repository,
+    )
