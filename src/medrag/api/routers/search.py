@@ -15,8 +15,8 @@ from medrag.api.schemas.search_response import (
     SearchResponse,
     SearchResult,
 )
-from medrag.application.services.retrieval_service import (
-    RetrievalService,
+from medrag.application.services.hybrid_retrieval_service import (
+    HybridRetrievalService,
 )
 from medrag.domain.value_objects.search_query import (
     SearchQuery,
@@ -41,7 +41,9 @@ router = APIRouter(
 @inject
 async def search_documents(
     request: SearchRequest,
-    retrieval_service: RetrievalService = Depends(Provide[Container.retrieval_service]),
+    hybrid_retrieval_service: HybridRetrievalService = Depends(
+        Provide[Container.hybrid_retrieval_service]
+    ),
 ) -> SearchResponse:
     """Search indexed documents."""
 
@@ -51,7 +53,7 @@ async def search_documents(
             top_k=request.top_k,
         )
 
-        results = await retrieval_service.retrieve(
+        results = await hybrid_retrieval_service.retrieve(
             query,
         )
 

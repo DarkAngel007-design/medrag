@@ -7,19 +7,19 @@ from medrag.domain.value_objects.retrieved_chunk import RetrievedChunk
 from medrag.domain.value_objects.search_query import SearchQuery
 
 
-class SearchRepository(ABC):
-    """Repository interface for document retrieval."""
+class LexicalSearchRepository(ABC):
+    """Repository interface for lexical document retrieval."""
 
     @abstractmethod
     async def index(
         self,
         chunks: list[Chunk],
     ) -> None:
-        """Index chunks for retrieval."""
+        """Index chunks for lexical retrieval."""
 
     @abstractmethod
     async def search(
         self,
         query: SearchQuery,
     ) -> list[RetrievedChunk]:
-        """Retrieve the most relevant chunks."""
+        """Retrieve relevant chunks using lexical search."""

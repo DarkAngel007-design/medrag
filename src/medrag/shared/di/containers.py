@@ -1,17 +1,20 @@
 from dependency_injector import containers, providers
 from qdrant_client import AsyncQdrantClient
 
+from medrag.application.services.composite_indexing_service import (
+    CompositeIndexingService,
+)
 from medrag.application.services.generation_service import (
     GenerationService,
+)
+from medrag.application.services.hybrid_retrieval_service import (
+    HybridRetrievalService,
 )
 from medrag.application.services.ingestion_service import (
     IngestionService,
 )
 from medrag.application.services.rag_service import (
     RAGService,
-)
-from medrag.application.services.retrieval_service import (
-    RetrievalService,
 )
 from medrag.infrastructure.chunkers.recursive_text_chunker import (
     RecursiveTextChunker,
@@ -31,6 +34,15 @@ from medrag.infrastructure.repositories.in_memory_document_repository import (
 )
 from medrag.infrastructure.repositories.qdrant_search_repository import (
     QdrantSearchRepository,
+)
+from medrag.infrastructure.retrieval.lexical.bm25_index import (
+    BM25Index,
+)
+from medrag.infrastructure.retrieval.lexical.bm25_search_repository import (
+    BM25SearchRepository,
+)
+from medrag.infrastructure.retrieval.lexical.tokenizer import (
+    BM25Tokenizer,
 )
 from medrag.shared.config.settings import (
     settings as app_settings,
@@ -58,6 +70,20 @@ class Container(containers.DeclarativeContainer):
         BGEM3EmbeddingProvider,
     )
 
+    bm25_tokenizer = providers.Singleton(
+        BM25Tokenizer,
+    )
+
+    bm25_index = providers.Singleton(
+        BM25Index,
+        tokenizer=bm25_tokenizer,
+    )
+
+    lexical_search_repository = providers.Singleton(
+        BM25SearchRepository,
+        index=bm25_index,
+    )
+
     document_parser = providers.Singleton(
         PyMuPDFDocumentParser,
     )
@@ -70,14 +96,18 @@ class Container(containers.DeclarativeContainer):
         InMemoryDocumentRepository,
     )
 
-    search_repository = providers.Singleton(
+    dense_search_repository = providers.Singleton(
         QdrantSearchRepository,
         client=qdrant_client,
         embedding_provider=embedding_provider,
         collection_name=app_settings.vector_db.collection_name,
     )
 
-    indexing_service = search_repository
+    indexing_service = providers.Factory(
+        CompositeIndexingService,
+        dense_search_repository=dense_search_repository,
+        lexical_search_repository=lexical_search_repository,
+    )
 
     ingestion_service = providers.Factory(
         IngestionService,
@@ -87,18 +117,15 @@ class Container(containers.DeclarativeContainer):
         indexing_service=indexing_service,
     )
 
-    retrieval_service = providers.Factory(
-        RetrievalService,
-        search_repository=search_repository,
+    hybrid_retrieval_service = providers.Factory(
+        HybridRetrievalService,
+        dense_search_repository=dense_search_repository,
     )
 
     prompt_builder = providers.Singleton(
         DefaultPromptBuilder,
         template_name=app_settings.prompts.system_template,
     )
-
-    print("Model:", app_settings.llm.model_name)
-    print("API key loaded:", app_settings.llm.api_key is not None)
 
     llm_provider = providers.Singleton(
         LiteLLMProvider,
@@ -113,6 +140,6 @@ class Container(containers.DeclarativeContainer):
 
     rag_service = providers.Factory(
         RAGService,
-        retrieval_service=retrieval_service,
+        hybrid_retrieval_service=hybrid_retrieval_service,
         generation_service=generation_service,
     )

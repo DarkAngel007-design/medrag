@@ -16,8 +16,8 @@ from medrag.application.ports.indexing_service import (
     IndexingService,
 )
 from medrag.domain.entities.chunk import Chunk
-from medrag.domain.repositories.search_repository import (
-    SearchRepository,
+from medrag.domain.repositories.dense_search_repository import (
+    DenseSearchRepository,
 )
 from medrag.domain.value_objects.retrieved_chunk import (
     RetrievedChunk,
@@ -30,7 +30,7 @@ DEFAULT_COLLECTION_NAME = "medrag_chunks"
 
 
 class QdrantSearchRepository(
-    SearchRepository,
+    DenseSearchRepository,
     IndexingService,
 ):
     """Qdrant-backed search repository."""

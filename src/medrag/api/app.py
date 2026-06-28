@@ -28,12 +28,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info("Initializing Qdrant collection...")
 
-    search_repository = container.search_repository()
+    dense_search_repository = container.dense_search_repository()
 
     print(container.settings().vector_db.host)
     print(container.settings().vector_db.port)
 
-    await search_repository.initialize()
+    await dense_search_repository.initialize()
 
     logger.info("Qdrant initialization complete.")
 

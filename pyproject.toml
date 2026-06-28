@@ -47,6 +47,7 @@ dependencies = [
     "pymupdf>=1.27.2.3",
     "python-multipart>=0.0.32",
     "litellm>=1.89.4",
+    "blingfire>=0.1.8",
 ]
 
 [dependency-groups]
