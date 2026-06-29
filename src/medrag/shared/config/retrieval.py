@@ -23,3 +23,12 @@ class RetrievalSettings(BaseConfig):
         ge=0.0,
         le=1.0,
     )
+
+    fusion_k: int = Field(
+        default=60,
+        ge=1,
+    )
+
+    reranker_model: str = Field(
+        default="BAAI/bge-reranker-v2-m3",
+    )

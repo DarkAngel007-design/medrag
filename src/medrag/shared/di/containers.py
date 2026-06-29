@@ -4,6 +4,7 @@ from qdrant_client import AsyncQdrantClient
 from medrag.application.services.composite_indexing_service import (
     CompositeIndexingService,
 )
+from medrag.application.services.fusion.rrf_fusion import RRFFusion
 from medrag.application.services.generation_service import (
     GenerationService,
 )
@@ -22,6 +23,9 @@ from medrag.infrastructure.chunkers.recursive_text_chunker import (
 from medrag.infrastructure.embeddings.bge_m3_provider import (
     BGEM3EmbeddingProvider,
 )
+from medrag.infrastructure.fingerprinting.sha256_fingerprinter import (
+    SHA256DocumentFingerprinter,
+)
 from medrag.infrastructure.llm.provider import LiteLLMProvider
 from medrag.infrastructure.parsers.pymupdf_parser import (
     PyMuPDFDocumentParser,
@@ -35,6 +39,7 @@ from medrag.infrastructure.repositories.in_memory_document_repository import (
 from medrag.infrastructure.repositories.qdrant_search_repository import (
     QdrantSearchRepository,
 )
+from medrag.infrastructure.reranking import BGEReranker
 from medrag.infrastructure.retrieval.lexical.bm25_index import (
     BM25Index,
 )
@@ -84,8 +89,21 @@ class Container(containers.DeclarativeContainer):
         index=bm25_index,
     )
 
+    fusion_strategy = providers.Singleton(
+        RRFFusion,
+    )
+
+    reranker = providers.Singleton(
+        BGEReranker,
+        settings=providers.Object(app_settings.retrieval),
+    )
+
     document_parser = providers.Singleton(
         PyMuPDFDocumentParser,
+    )
+
+    document_fingerprinter = providers.Singleton(
+        SHA256DocumentFingerprinter,
     )
 
     text_chunker = providers.Singleton(
@@ -115,11 +133,15 @@ class Container(containers.DeclarativeContainer):
         document_parser=document_parser,
         text_chunker=text_chunker,
         indexing_service=indexing_service,
+        document_fingerprinter=document_fingerprinter,
     )
 
     hybrid_retrieval_service = providers.Factory(
         HybridRetrievalService,
         dense_search_repository=dense_search_repository,
+        lexical_search_repository=lexical_search_repository,
+        fusion_strategy=fusion_strategy,
+        reranker=reranker,
     )
 
     prompt_builder = providers.Singleton(

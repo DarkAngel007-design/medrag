@@ -8,3 +8,4 @@ class IngestionResult:
 
     document_id: UUID
     chunk_count: int
+    already_indexed: bool = False

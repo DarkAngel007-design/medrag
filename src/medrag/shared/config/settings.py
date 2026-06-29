@@ -5,6 +5,7 @@ from .database import DatabaseSettings
 from .llm import LLMSettings
 from .logging import LoggingSettings
 from .prompts import PromptSettings
+from .reranker import RerankerSettings
 from .retrieval import RetrievalSettings
 from .vector_db import VectorDBSettings
 
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     retrieval: RetrievalSettings = RetrievalSettings()
     vector_db: VectorDBSettings = VectorDBSettings()
     prompts: PromptSettings = PromptSettings()
+    reranker: RerankerSettings = RerankerSettings()
 
 
 settings = Settings()

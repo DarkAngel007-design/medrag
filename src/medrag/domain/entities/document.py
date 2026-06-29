@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from medrag.domain.exceptions import InvalidDocumentError
+from medrag.domain.value_objects import DocumentFingerprint
 
 
 @dataclass(slots=True)
@@ -14,6 +15,7 @@ class Document:
 
     id: UUID
     source: str
+    fingerprint: DocumentFingerprint
     content: str
     created_at: datetime
     updated_at: datetime

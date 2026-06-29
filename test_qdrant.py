@@ -1,15 +1,5 @@
-import asyncio
+from sentence_transformers import CrossEncoder
 
-from qdrant_client import AsyncQdrantClient
+model = CrossEncoder("BAAI/bge-reranker-v2-m3")
 
-
-async def test() -> None:
-    client = AsyncQdrantClient(
-        host="localhost",
-        port=6333,
-    )
-
-    print(await client.collection_exists("medrag_chunks"))
-
-
-asyncio.run(test())
+print(model.predict([("What is DeepTox?", "DeepTox is a toxicity prediction model.")]))

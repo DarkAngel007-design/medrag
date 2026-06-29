@@ -8,3 +8,5 @@ class UploadResponse(BaseModel):
 
     document_id: UUID
     chunk_count: int
+    already_indexed: bool
+    message: str

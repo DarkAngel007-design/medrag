@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from medrag.domain.entities.document import Document
+from medrag.domain.value_objects import DocumentFingerprint
 
 
 class DocumentRepository(ABC):
@@ -36,3 +37,10 @@ class DocumentRepository(ABC):
         document_id: UUID,
     ) -> bool:
         """Check whether a document exists."""
+
+    @abstractmethod
+    async def get_by_fingerprint(
+        self,
+        fingerprint: DocumentFingerprint,
+    ) -> Document | None:
+        """Return the document with the given fingerprint, if it exists."""

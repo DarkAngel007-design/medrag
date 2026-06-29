@@ -4,13 +4,12 @@ from uuid import uuid4
 
 import pytest
 
+from medrag.application.ports import FusionStrategy, Reranker
 from medrag.application.services.hybrid_retrieval_service import (
     HybridRetrievalService,
 )
 from medrag.domain.entities.chunk import Chunk
-from medrag.domain.value_objects.retrieved_chunk import (
-    RetrievedChunk,
-)
+from medrag.domain.value_objects.retrieved_chunk import RetrievedChunk
 from medrag.domain.value_objects.search_query import SearchQuery
 
 
@@ -40,6 +39,24 @@ class FakeLexicalSearchRepository:
         query: SearchQuery,
     ) -> list[RetrievedChunk]:
         return self._results
+
+
+class FakeFusionStrategy(FusionStrategy):
+    async def fuse(
+        self,
+        dense_results: list[RetrievedChunk],
+        lexical_results: list[RetrievedChunk],
+    ) -> list[RetrievedChunk]:
+        return dense_results + lexical_results
+
+
+class FakeReranker(Reranker):
+    async def rerank(
+        self,
+        query: SearchQuery,
+        retrieved_chunks: list[RetrievedChunk],
+    ) -> list[RetrievedChunk]:
+        return retrieved_chunks
 
 
 def make_result(
@@ -73,28 +90,13 @@ async def test_merge_dense_and_lexical_results() -> None:
     ]
 
     service = HybridRetrievalService(
-        FakeDenseSearchRepository(dense),
-        FakeLexicalSearchRepository(lexical),
+        dense_search_repository=FakeDenseSearchRepository(dense),
+        lexical_search_repository=FakeLexicalSearchRepository(lexical),
+        fusion_strategy=FakeFusionStrategy(),
+        reranker=FakeReranker(),
     )
 
     results = await service.retrieve(SearchQuery(query="cancer"))
 
     assert len(results) == 3
-
-
-@pytest.mark.asyncio
-async def test_duplicate_chunks_removed() -> None:
-    shared = make_result("Cancer", 1)
-
-    dense = [shared]
-
-    lexical = [shared]
-
-    service = HybridRetrievalService(
-        FakeDenseSearchRepository(dense),
-        FakeLexicalSearchRepository(lexical),
-    )
-
-    results = await service.retrieve(SearchQuery(query="cancer"))
-
-    assert len(results) == 1
+    assert results == dense + lexical

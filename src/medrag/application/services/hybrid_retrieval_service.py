@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from uuid import UUID
 
+from medrag.application.ports.fusion_strategy import FusionStrategy
+from medrag.application.ports.reranker import Reranker
 from medrag.domain.repositories.dense_search_repository import (
     DenseSearchRepository,
 )
@@ -24,9 +25,13 @@ class HybridRetrievalService:
         self,
         dense_search_repository: DenseSearchRepository,
         lexical_search_repository: LexicalSearchRepository,
+        fusion_strategy: FusionStrategy,
+        reranker: Reranker,
     ) -> None:
         self._dense = dense_search_repository
         self._lexical = lexical_search_repository
+        self._fusion_strategy = fusion_strategy
+        self._reranker = reranker
 
     async def retrieve(
         self,
@@ -39,26 +44,12 @@ class HybridRetrievalService:
             self._lexical.search(query),
         )
 
-        return self._merge_results(
+        fused_results = await self._fusion_strategy.fuse(
             dense_results,
             lexical_results,
         )
 
-    def _merge_results(
-        self,
-        dense_results: list[RetrievedChunk],
-        lexical_results: list[RetrievedChunk],
-    ) -> list[RetrievedChunk]:
-        """Merge dense and lexical results without ranking."""
-
-        merged: list[RetrievedChunk] = []
-        seen: set[UUID] = set()
-
-        for result in [*dense_results, *lexical_results]:
-            if result.chunk.id in seen:
-                continue
-
-            seen.add(result.chunk.id)
-            merged.append(result)
-
-        return merged
+        return await self._reranker.rerank(
+            query,
+            fused_results,
+        )

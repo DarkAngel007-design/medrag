@@ -51,6 +51,12 @@ async def upload_document(
         return UploadResponse(
             document_id=result.document_id,
             chunk_count=result.chunk_count,
+            already_indexed=result.already_indexed,
+            message=(
+                "Document already indexed."
+                if result.already_indexed
+                else "Document indexed successfully."
+            ),
         )
 
     except HTTPException:
